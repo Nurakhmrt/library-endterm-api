@@ -1,1 +1,1 @@
-Put screenshots here.
+Screenshots here.
