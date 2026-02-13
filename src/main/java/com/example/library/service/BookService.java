@@ -35,7 +35,10 @@ public class BookService {
 
       BookBase book = BookFactory.create(req, cat);
       repository.create(book, req.getPrice());
+
+      // invalidate cache after create
       BookCache.getInstance().clear();
+
       log.info("Created book: " + req.getTitle() + " (" + req.getBookType() + ")");
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
@@ -45,11 +48,19 @@ public class BookService {
   public List<BookRowResponse> listAllBooks() {
     try {
       BookCache cache = BookCache.getInstance();
+
       if (cache.getBooks() != null) {
+        System.out.println("BOOKS FROM CACHE");
+        log.info("Returning books from CACHE");
         return cache.getBooks();
       }
+
+      System.out.println("BOOKS FROM DATABASE");
+      log.info("Fetching books from DATABASE");
+
       List<BookRowResponse> books = repository.getAll();
       cache.setBooks(books);
+
       return books;
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
@@ -60,7 +71,10 @@ public class BookService {
     if (req.getPrice() == null || req.getPrice() <= 0) throw new InvalidInputException("Price must be positive");
     try {
       repository.update(id, req.getTitle(), req.getPrice());
+
+      // invalidate cache after update
       BookCache.getInstance().clear();
+
       log.info("Updated book id=" + id);
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
@@ -70,7 +84,10 @@ public class BookService {
   public void deleteBook(int id) {
     try {
       repository.delete(id);
+
+      // invalidate cache after delete
       BookCache.getInstance().clear();
+
       log.warn("Deleted book id=" + id);
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
