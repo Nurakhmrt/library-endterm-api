@@ -35,6 +35,7 @@ public class BookService {
 
       BookBase book = BookFactory.create(req, cat);
       repository.create(book, req.getPrice());
+      BookCache.getInstance().clear();
       log.info("Created book: " + req.getTitle() + " (" + req.getBookType() + ")");
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
@@ -43,7 +44,13 @@ public class BookService {
 
   public List<BookRowResponse> listAllBooks() {
     try {
-      return repository.getAll();
+      BookCache cache = BookCache.getInstance();
+      if (cache.getBooks() != null) {
+        return cache.getBooks();
+      }
+      List<BookRowResponse> books = repository.getAll();
+      cache.setBooks(books);
+      return books;
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
     }
@@ -53,6 +60,7 @@ public class BookService {
     if (req.getPrice() == null || req.getPrice() <= 0) throw new InvalidInputException("Price must be positive");
     try {
       repository.update(id, req.getTitle(), req.getPrice());
+      BookCache.getInstance().clear();
       log.info("Updated book id=" + id);
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
@@ -62,6 +70,7 @@ public class BookService {
   public void deleteBook(int id) {
     try {
       repository.delete(id);
+      BookCache.getInstance().clear();
       log.warn("Deleted book id=" + id);
     } catch (SQLException e) {
       throw new RuntimeException("DB Error: " + e.getMessage());
